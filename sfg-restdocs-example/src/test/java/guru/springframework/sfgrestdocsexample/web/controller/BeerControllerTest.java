@@ -10,11 +10,12 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
@@ -30,7 +31,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.constraints.ConstraintDescriptions;
+
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -40,7 +45,7 @@ import guru.springframework.sfgrestdocsexample.web.model.BeerDto;
 import guru.springframework.sfgrestdocsexample.web.model.BeerStyleEnum;
 
 @ExtendWith(RestDocumentationExtension.class)
-@AutoConfigureRestDocs
+@AutoConfigureRestDocs(uriScheme = "https", uriHost = "br.com.agmg.springbootcourse", uriPort = 80)
 @WebMvcTest(BeerController.class)
 @ComponentScan(basePackages = "guru.springframework.sfgrestdocsexample.web.mappers")
 class BeerControllerTest {
@@ -62,7 +67,7 @@ class BeerControllerTest {
         		.param("iscold", "true")
         		.accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(document("v1/beer/",
+                .andDo(document("v1/beer-get/",
             		pathParameters(
             		    parameterWithName("beerId").description("UUID of desired Beer to get.")
             		),
@@ -88,22 +93,24 @@ class BeerControllerTest {
         BeerDto beerDto =  getValidBeerDto();
         String beerDtoJson = objectMapper.writeValueAsString(beerDto);
 
+        ConstrainedFields fields = new ConstrainedFields(BeerDto.class);
+
         mockMvc.perform(post("/api/v1/beer/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(beerDtoJson))
                 .andExpect(status().isCreated())
-                .andDo(document("v1/beer",
+                .andDo(document("v1/beer-new",
                     requestFields(
-                            fieldWithPath("id").ignored(),
-                            fieldWithPath("version").ignored(),
-                            fieldWithPath("createdDate").ignored(),
-                            fieldWithPath("lastModifiedDate").ignored(),
-                            fieldWithPath("beerName").description("Name of the beer"),
-                            fieldWithPath("beerStyle").description("Style of Beer"),
-                            fieldWithPath("upc").description("Beer UPC").attributes(),
-                            fieldWithPath("price").description("Beer Price"),
-                            fieldWithPath("quantityOnHand").ignored()
-                 )));;
+                            fields.withPath("id").ignored(),
+                            fields.withPath("version").ignored(),
+                            fields.withPath("createdDate").ignored(),
+                            fields.withPath("lastModifiedDate").ignored(),
+                            fields.withPath("beerName").description("Name of the beer"),
+                            fields.withPath("beerStyle").description("Style of Beer"),
+                            fields.withPath("upc").description("Beer UPC").attributes(),
+                            fields.withPath("price").description("Beer Price"),
+                            fields.withPath("quantityOnHand").ignored()
+                 )));
     }
 
     @Test
@@ -125,6 +132,22 @@ class BeerControllerTest {
                 .upc(123123123123L)
                 .build();
 
+    }
+
+
+    private static class ConstrainedFields {
+
+        private final ConstraintDescriptions constraintDescriptions;
+
+        ConstrainedFields(Class<?> input) {
+            this.constraintDescriptions = new ConstraintDescriptions(input);
+        }
+
+        private FieldDescriptor withPath(String path) {
+            return fieldWithPath(path).attributes(key("constraints").value(StringUtils
+                    .collectionToDelimitedString(this.constraintDescriptions
+                            .descriptionsForProperty(path), ". ")));
+        }
     }
 
 }
