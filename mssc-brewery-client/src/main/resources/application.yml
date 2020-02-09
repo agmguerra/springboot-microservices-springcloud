@@ -1,0 +1,21 @@
+sfg:
+  brewery:
+    apihost: http://localhost:8080
+  httpclient:
+    maxtotalconnections: 100
+    defaultmaxperrouteconnections: 20
+    connectionrequesttimeout: 3000
+    sockettimeout: 3000
+  nio:
+    connectiontimeout: 3000
+    iothreadcount: 4
+    sotimeout: 3000
+    maxtotalconnections: 1000
+    defaultmaxperrouteconnections: 100
+    
+logging:
+  level:
+    org:
+      apache:
+        http: error
+    
