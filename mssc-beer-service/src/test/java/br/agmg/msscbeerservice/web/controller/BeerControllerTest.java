@@ -1,5 +1,7 @@
 package br.agmg.msscbeerservice.web.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -11,11 +13,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import br.agmg.msscbeerservice.bootstrap.BeerLoader;
+import br.agmg.msscbeerservice.services.BeerService;
 import br.agmg.msscbeerservice.web.model.BeerDto;
 import br.agmg.msscbeerservice.web.model.BeerStyleEnum;
 
@@ -28,8 +33,14 @@ class BeerControllerTest {
 	@Autowired
 	ObjectMapper objectMapper;
 
+	@MockBean
+    BeerService beerService;
+
 	@Test
 	void testGetBeerById() throws Exception {
+
+		given(beerService.getById(any())).willReturn(getValidBeerDto());
+
 
 		mockMvc.perform(get("/api/v1/beer/" + UUID.randomUUID().toString())
 				.accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk());
@@ -41,6 +52,8 @@ class BeerControllerTest {
 		BeerDto beerDto = getValidBeerDto();
 		String beerDtoJson = objectMapper.writeValueAsString(beerDto);
 
+		given(beerService.saveNewBeer(any())).willReturn(getValidBeerDto());
+
 		mockMvc.perform(post("/api/v1/beer")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(beerDtoJson))
@@ -51,6 +64,8 @@ class BeerControllerTest {
 	void testUpdateBeerById() throws Exception {
 		BeerDto beerDto = getValidBeerDto();
 		String beerDtoJson = objectMapper.writeValueAsString(beerDto);
+
+		given(beerService.updateBeer(any(), any())).willReturn(getValidBeerDto());
 
 		mockMvc.perform(put("/api/v1/beer/" + UUID.randomUUID().toString())
 				.contentType(MediaType.APPLICATION_JSON)
@@ -65,7 +80,7 @@ class BeerControllerTest {
 				.beerName("New Beer")
 				.beerStyle(BeerStyleEnum.ALE)
 				.price(new BigDecimal("2.99"))
-				.upc("1212121212")
+				.upc(BeerLoader.BEER_1_UPC)
 				.build();
 	}
 
